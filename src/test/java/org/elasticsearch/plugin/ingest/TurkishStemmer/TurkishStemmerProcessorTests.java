@@ -17,6 +17,7 @@
 
 package org.elasticsearch.plugin.ingest.TurkishStemmer;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
 import org.elasticsearch.ingest.IngestDocument;
 import org.elasticsearch.ingest.RandomDocumentPicks;
 import org.elasticsearch.test.ESTestCase;
@@ -27,6 +28,7 @@ import java.util.Map;
 import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.is;
 
+@ThreadLeakScope(ThreadLeakScope.Scope.NONE)
 public class TurkishStemmerProcessorTests extends ESTestCase {
 
     public void testThatProcessorWorks() throws Exception {
