@@ -1,0 +1,69 @@
+buildscript {
+  repositories {
+    mavenLocal()
+    mavenCentral()
+    jcenter()
+  }
+
+  dependencies {
+    classpath "org.elasticsearch.gradle:build-tools:${elasticsearch_version}"
+  }
+}
+
+repositories {
+  mavenLocal()
+}
+
+group = 'org.elasticsearch.plugin.ingest'
+version = '0.0.1-SNAPSHOT'
+
+apply plugin: 'java'
+apply plugin: 'idea'
+apply plugin: 'elasticsearch.esplugin'
+apply plugin: 'elasticsearch.yaml-rest-test'
+
+// license of this project
+licenseFile = rootProject.file('LICENSE.txt')
+// copyright notices
+noticeFile = rootProject.file('NOTICE.txt')
+
+esplugin {
+  name 'ingest-turkish-stemmer'
+  description 'Stemmer For the Turkish Language'
+  classname 'org.elasticsearch.plugin.ingest.turkish.stemmer.IngestTurkishStemmerPlugin'
+  // license of the plugin, may be different than the above license
+  licenseFile rootProject.file('LICENSE.txt')
+  // copyright notices, may be different than the above notice
+  noticeFile rootProject.file('NOTICE.txt')
+}
+
+// In this section you declare the dependencies for your production and test code
+// Note, the two dependencies are not really needed as the buildscript dependency gets them in already
+// they are just here as an example
+dependencies {
+  compile "org.elasticsearch:elasticsearch:${elasticsearch_version}"
+  compile fileTree(dir: 'src/libs/', include: ['*.jar'])
+
+  // the yaml tests require a log4j2 dependency, otherwise a dependency is thrown on startup
+  yamlRestTestImplementation 'org.apache.logging.log4j:log4j-core:2.11.1'
+}
+
+// Set to false to not use elasticsearch checkstyle rules
+checkstyleMain.enabled = true
+checkstyleTest.enabled = true
+
+// these are all features used within the Elasticsearch codebase
+// but requires some more work to make it work in plugins
+// so they are disabled to get up and running faster
+dependencyLicenses.enabled = false
+thirdPartyAudit.enabled = false
+licenseHeaders.enabled = false
+loggerUsageCheck.enabled = false
+
+// disable validation of pom creation, only needed for sonatype uploads
+validateNebulaPom.enabled = false
+
+// ignore javadoc linting errors for now
+tasks.withType(Javadoc) {
+  options.addStringOption('Xdoclint:none', '-quiet')
+}
