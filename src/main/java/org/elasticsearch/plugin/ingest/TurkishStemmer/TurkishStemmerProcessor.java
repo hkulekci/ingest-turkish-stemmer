@@ -146,9 +146,11 @@ public class TurkishStemmerProcessor extends AbstractProcessor {
             String targetField = readStringProperty(TYPE, tag, config, "target_field", "default_field_name");
             Boolean storeOriginal = readBooleanProperty(TYPE, tag, config, "store_original", true);
             String delimiter = readStringProperty(TYPE, tag, config, "delimiter", " ");
+            Boolean wordGeneration = readBooleanProperty(TYPE, tag, config, "word_generation", false);
 
             TurkishStemmerProcessor tsp = new TurkishStemmerProcessor(tag, description, field, targetField, storeOriginal);
             tsp.setDelimiter(delimiter);
+            tsp.setWordGeneration(wordGeneration);
 
             return tsp;
         }
