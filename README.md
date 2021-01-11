@@ -30,6 +30,43 @@ GET /my-index/my-type/1
 }
 ```
 
+### Simulate on Kibana
+
+```
+GET _ingest/pipeline
+
+
+PUT _ingest/pipeline/zemberek_test
+{
+  "description" : "Zemberek test",
+  "processors" : [
+    {
+      "turkish_stemmer" : {
+        "field": "name",
+        "target_field": "name_stem",
+        "store_original": false,
+        "word_generation": false
+      }
+    }
+  ]
+}
+
+
+
+GET _ingest/pipeline/zemberek_test/_simulate
+{
+  "docs": [
+    {
+      "_index": "index",
+      "_id": "id",
+      "_source": {
+        "name": "domatesçiler"
+      }
+    }
+  ]
+}
+```
+
 ## Configuration
 
 | Parameter | Use |
@@ -64,9 +101,9 @@ bin/elasticsearch-plugin install file:///path/to/ingest-turkish-stemmer/build/di
 
 ## Bugs & TODO
 
-* [ ] add a tokenizer for the pipeline processor (TurkishTokenizer)
+* [x] add a tokenizer for the pipeline processor (TurkishTokenizer)
 * [ ] put the normalization (normalizer.normalize)
-* [ ] put the morphological analysis for the words
-* [ ] we can use morphology.getWordGenerator() to generate similar words
+* [x] put the morphological analysis for the words
+* [x] we can use morphology.getWordGenerator() to generate similar words
 
 
