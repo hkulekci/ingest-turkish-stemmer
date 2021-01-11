@@ -29,5 +29,5 @@
         index: test
         id: 1
   - match: { _source.field1: "kutucuk" }
-  - match: { _source.field2: "kutu" }
+  - match: { _source.field2: "kutucuk kutu" }
 

@@ -6,15 +6,15 @@ out/
 *-execution-hints.log
 *-execution-times.log
 
-// ignore the downloaded model files in git
+# ignore the downloaded model files in git
 src/test/resources/models/
 
-// intellij
+# intellij
 *.iml
 *.ipr
 *.iws
 
-// eclipse
+# eclipse
 .project
 .classpath
 eclipse-build

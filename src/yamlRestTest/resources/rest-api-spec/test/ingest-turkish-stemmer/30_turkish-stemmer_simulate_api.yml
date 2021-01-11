@@ -24,4 +24,4 @@
 
   - length: { docs.0.doc._source: 2 }
   - match: { docs.0.doc._source.field1: "kutucuk" }
-  - match: { docs.0.doc._source.field2: "kutu" }
+  - match: { docs.0.doc._source.field2: "kutucuk kutu" }

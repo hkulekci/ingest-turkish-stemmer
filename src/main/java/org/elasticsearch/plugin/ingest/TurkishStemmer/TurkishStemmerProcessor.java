@@ -17,22 +17,25 @@
 
 package org.elasticsearch.plugin.ingest.TurkishStemmer;
 
+import org.elasticsearch.SpecialPermission;
 import org.elasticsearch.ingest.AbstractProcessor;
 import org.elasticsearch.ingest.IngestDocument;
 import org.elasticsearch.ingest.Processor;
-// ES permission you should check before doPrivileged() blocks
-import org.elasticsearch.SpecialPermission;
 import zemberek.morphology.TurkishMorphology;
 import zemberek.morphology.analysis.SingleAnalysis;
 import zemberek.morphology.analysis.WordAnalysis;
+import zemberek.morphology.generator.WordGenerator;
+import zemberek.morphology.lexicon.DictionaryItem;
 
 import java.io.IOException;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import static org.elasticsearch.ingest.ConfigurationUtils.readBooleanProperty;
 import static org.elasticsearch.ingest.ConfigurationUtils.readStringProperty;
 
 public class TurkishStemmerProcessor extends AbstractProcessor {
@@ -41,31 +44,77 @@ public class TurkishStemmerProcessor extends AbstractProcessor {
 
     private final String field;
     private final String targetField;
+    private final Boolean storeOriginal;
+    private String delimiter = " ";
+    private Boolean wordGeneration = false;
 
     public TurkishStemmerProcessor(String tag, String description, String field,
-                 String targetField) throws IOException {
+                 String targetField, Boolean storeOriginal) throws IOException {
         super(tag, description);
         this.field = field;
         this.targetField = targetField;
+        this.storeOriginal = storeOriginal;
     }
 
-    private List<String> getLemmas(String content) {
+    public void setDelimiter(String delimiter)
+    {
+        this.delimiter = delimiter;
+    }
+
+    public void setWordGeneration(Boolean wordGeneration)
+    {
+        this.wordGeneration = wordGeneration;
+    }
+
+    private List<String> getLemmas(List<String> terms) {
         SecurityManager sm = System.getSecurityManager();
+        Boolean storeOriginal = this.storeOriginal;
+        Boolean wordGeneration = this.wordGeneration;
         if (sm != null) {
             // unprivileged code such as scripts do not have SpecialPermission
             sm.checkPermission(new SpecialPermission());
         }
         return AccessController.doPrivileged(new PrivilegedAction<List<String>>() {
             public List<String> run() {
-
                 List<String> resultContent = new java.util.ArrayList<>(Collections.emptyList());
                 TurkishMorphology morphology = TurkishMorphology.createWithDefaults();
+                for (String term: terms ) {
+                    if (!resultContent.contains(term) && storeOriginal) {
+                        resultContent.add(term);
+                    }
+                    WordAnalysis results = morphology.analyze(term);
+                    for (SingleAnalysis result : results) {
+                        String lemma = result.getLemmas().get(0);
+                        if (!resultContent.contains(lemma)) {
+                            resultContent.add(lemma);
+                        }
+                    }
 
-                WordAnalysis results = morphology.analyze(content);
-                for (SingleAnalysis result : results) {
-                    String lemma = result.getLemmas().get(0);
-                    if (!resultContent.contains(lemma)) {
-                        resultContent.add(lemma);
+                    if (wordGeneration) {
+                        String[] number = {"A3sg", "A3pl"};
+                        String[] possessives = {"P1sg", "P2sg", "P3sg"};
+                        String[] cases = {"Dat", "Loc", "Abl"};
+
+
+                        TurkishMorphology wordGenerationMorphology =
+                                TurkishMorphology.builder().setLexicon(term).disableCache().build();
+
+                        DictionaryItem item = wordGenerationMorphology.getLexicon().getMatchingItems(term).get(0);
+                        for (String numberM : number) {
+                            for (String possessiveM : possessives) {
+                                for (String caseM : cases) {
+                                    List<WordGenerator.Result> wordGenerationResults =
+                                            wordGenerationMorphology.getWordGenerator().generate(
+                                                    item, numberM, possessiveM, caseM
+                                            );
+                                    wordGenerationResults.forEach(s -> {
+                                        if (!resultContent.contains(s.surface)) {
+                                            resultContent.add(s.surface);
+                                        }
+                                    });
+                                }
+                            }
+                        }
                     }
                 }
 
@@ -77,8 +126,9 @@ public class TurkishStemmerProcessor extends AbstractProcessor {
     @Override
     public IngestDocument execute(IngestDocument ingestDocument) throws Exception {
         String content = ingestDocument.getFieldValue(field, String.class);
+        List<String> terms = Arrays.asList(content.split(this.delimiter));
 
-        ingestDocument.setFieldValue(targetField, String.join(" ", this.getLemmas(content)));
+        ingestDocument.setFieldValue(targetField, String.join(" ", this.getLemmas(terms)));
         return ingestDocument;
     }
 
@@ -94,8 +144,13 @@ public class TurkishStemmerProcessor extends AbstractProcessor {
                String description, Map<String, Object> config) throws Exception {
             String field = readStringProperty(TYPE, tag, config, "field");
             String targetField = readStringProperty(TYPE, tag, config, "target_field", "default_field_name");
+            Boolean storeOriginal = readBooleanProperty(TYPE, tag, config, "store_original", true);
+            String delimiter = readStringProperty(TYPE, tag, config, "delimiter", " ");
 
-            return new TurkishStemmerProcessor(tag, description, field, targetField);
+            TurkishStemmerProcessor tsp = new TurkishStemmerProcessor(tag, description, field, targetField, storeOriginal);
+            tsp.setDelimiter(delimiter);
+
+            return tsp;
         }
     }
 }

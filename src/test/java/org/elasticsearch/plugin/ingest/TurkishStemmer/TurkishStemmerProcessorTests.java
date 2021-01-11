@@ -37,12 +37,71 @@ public class TurkishStemmerProcessorTests extends ESTestCase {
         IngestDocument ingestDocument = RandomDocumentPicks.randomIngestDocument(random(), document);
 
         TurkishStemmerProcessor processor = new TurkishStemmerProcessor(
-                randomAlphaOfLength(10), "description", "source_field", "target_field"
+                randomAlphaOfLength(10), "description", "source_field", "target_field", true
+        );
+        Map<String, Object> data = processor.execute(ingestDocument).getSourceAndMetadata();
+
+        assertThat(data, hasKey("target_field"));
+        assertThat(data.get("target_field"), is("kutucuk kutu"));
+    }
+
+    public void testThatProcessorWorksWithoutOriginalValue() throws Exception {
+        Map<String, Object> document = new HashMap<>();
+        document.put("source_field", "kutucuk");
+        IngestDocument ingestDocument = RandomDocumentPicks.randomIngestDocument(random(), document);
+
+        TurkishStemmerProcessor processor = new TurkishStemmerProcessor(
+                randomAlphaOfLength(10), "description", "source_field", "target_field", false
         );
         Map<String, Object> data = processor.execute(ingestDocument).getSourceAndMetadata();
 
         assertThat(data, hasKey("target_field"));
         assertThat(data.get("target_field"), is("kutu"));
+    }
+
+    public void testThatProcessorWorksWithMultipleKeyword() throws Exception {
+        Map<String, Object> document = new HashMap<>();
+        document.put("source_field", "kutucuk güzel bir objedir");
+        IngestDocument ingestDocument = RandomDocumentPicks.randomIngestDocument(random(), document);
+
+        TurkishStemmerProcessor processor = new TurkishStemmerProcessor(
+                randomAlphaOfLength(10), "description", "source_field", "target_field", true
+        );
+        Map<String, Object> data = processor.execute(ingestDocument).getSourceAndMetadata();
+
+        assertThat(data, hasKey("target_field"));
+        assertThat(data.get("target_field"), is("kutucuk kutu güzel bir objedir obje"));
+    }
+
+    public void testThatProcessorWorksWithDifferentDelimiter() throws Exception {
+        Map<String, Object> document = new HashMap<>();
+        document.put("source_field", "kutucuk-niğdeli");
+        IngestDocument ingestDocument = RandomDocumentPicks.randomIngestDocument(random(), document);
+
+        TurkishStemmerProcessor processor = new TurkishStemmerProcessor(
+                randomAlphaOfLength(10), "description", "source_field", "target_field", false
+        );
+        processor.setDelimiter("-");
+        Map<String, Object> data = processor.execute(ingestDocument).getSourceAndMetadata();
+
+        assertThat(data, hasKey("target_field"));
+        assertThat(data.get("target_field"), is("kutu niğde"));
+    }
+
+    public void testThatProcessorWorksWithWordGeneration() throws Exception {
+        Map<String, Object> document = new HashMap<>();
+        document.put("source_field", "kutucuk");
+        IngestDocument ingestDocument = RandomDocumentPicks.randomIngestDocument(random(), document);
+
+        TurkishStemmerProcessor processor = new TurkishStemmerProcessor(
+                randomAlphaOfLength(10), "description", "source_field", "target_field", false
+        );
+        processor.setWordGeneration(true);
+        Map<String, Object> data = processor.execute(ingestDocument).getSourceAndMetadata();
+
+        assertThat(data, hasKey("target_field"));
+        assertThat(data.get("target_field"), is("kutu kutucuğuma kutucuğumda kutucuğumdan kutucuğuna kutucuğunda " +
+                "kutucuğundan kutucuklarıma kutucuklarımda kutucuklarımdan kutucuklarına kutucuklarında kutucuklarından"));
     }
 }
 
